@@ -115,7 +115,7 @@ def category(slug):
 
     products_response = (
         supabase.table("products")
-        .select("*, categories(name, slug)")
+        .select("*")
         .eq("category_id", selected_category["id"])
         .eq("is_active", True)
         .order("created_at", desc=True)
@@ -133,7 +133,7 @@ def category(slug):
 def product(slug):
     product_response = (
         supabase.table("products")
-        .select("*, categories(name, slug)")
+        .select("*")
         .eq("slug", slug)
         .eq("is_active", True)
         .limit(1)
@@ -147,7 +147,7 @@ def product(slug):
 
     related_response = (
         supabase.table("products")
-        .select("*, categories(name, slug)")
+        .select("*")
         .eq("category_id", product["category_id"])
         .eq("is_active", True)
         .neq("id", product["id"])
