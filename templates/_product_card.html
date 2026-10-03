@@ -13,7 +13,7 @@
 
   <div class="product-content">
     <div class="product-meta">
-      <span>{{ product.categories.name if product.categories else 'Deals' }}</span>
+      <span>{{ product.store_name or 'Deals' }}</span>
       <span>★ {{ product.rating or 'New' }}</span>
     </div>
 
