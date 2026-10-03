@@ -1,0 +1,15 @@
+[
+  {
+    "title": "Premium Smart Watch",
+    "description": "Fitness tracking and calling support.",
+    "image_url": "https://example.com/watch.jpg",
+    "affiliate_url": "https://your-affiliate-link.com/watch",
+    "source_product_url": "https://store.example.com/watch",
+    "current_price": 2499,
+    "original_price": 4999,
+    "rating": 4.4,
+    "store_name": "Amazon",
+    "category_name": "Electronics",
+    "is_featured": true
+  }
+]

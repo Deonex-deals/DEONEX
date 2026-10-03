@@ -1,0 +1,35 @@
+# Secret environment variables
+.env
+.env.*
+!.env.example
+
+# Python virtual environments
+venv/
+.venv/
+env/
+
+# Python cache
+__pycache__/
+*.py[cod]
+*$py.class
+
+# Flask
+instance/
+.webassets-cache
+
+# Operating system files
+.DS_Store
+Thumbs.db
+
+# IDE configuration
+.vscode/
+.idea/
+
+# Log files
+*.log
+logs/
+
+# Test/cache files
+.pytest_cache/
+.coverage
+htmlcov/
