@@ -7,10 +7,8 @@
   <div class="breadcrumbs">
     <a href="{{ url_for('home') }}">Home</a>
     <span>/</span>
-    {% if product.categories %}
-      <a href="{{ url_for('category', slug=product.categories.slug) }}">{{ product.categories.name }}</a>
-      <span>/</span>
-    {% endif %}
+   <span>{{ product.store_name or 'Deals' }}</span>
+<span>/</span>
     <span>{{ product.title }}</span>
   </div>
 
