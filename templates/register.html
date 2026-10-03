@@ -1,0 +1,34 @@
+{% extends "base.html" %}
+
+{% block title %}Register | Deonex Deals{% endblock %}
+
+{% block content %}
+<section class="auth-section">
+  <div class="auth-card">
+    <span class="eyebrow">START SAVING SMARTER</span>
+    <h1>Create your account</h1>
+    <p>Deonex Deals पर अपना free account बनाइए.</p>
+
+    <form class="premium-form" method="POST">
+      <div class="form-group">
+        <label for="name">Full name</label>
+        <input id="name" name="name" type="text" placeholder="Your full name" required>
+      </div>
+
+      <div class="form-group">
+        <label for="email">Email address</label>
+        <input id="email" name="email" type="email" placeholder="you@example.com" required>
+      </div>
+
+      <div class="form-group">
+        <label for="password">Password</label>
+        <input id="password" name="password" type="password" placeholder="Minimum 6 characters" minlength="6" required>
+      </div>
+
+      <button class="btn btn-primary full-width-btn" type="submit">Create account</button>
+    </form>
+
+    <p class="auth-switch">पहले से account है? <a href="{{ url_for('login') }}">Login करें</a></p>
+  </div>
+</section>
+{% endblock %}

@@ -1,0 +1,26 @@
+{% extends "base.html" %}
+
+{% block title %}Dashboard | Deonex Deals{% endblock %}
+
+{% block content %}
+<section class="container dashboard-section">
+  <span class="eyebrow">YOUR ACCOUNT</span>
+  <h1>Welcome, {{ logged_user.name or logged_user.email }}</h1>
+  <p class="dashboard-subtitle">आप Deonex Deals में successfully signed in हैं.</p>
+
+  <div class="dashboard-cards">
+    <div class="dashboard-card">
+      <span>Account email</span>
+      <strong>{{ logged_user.email }}</strong>
+    </div>
+    <div class="dashboard-card">
+      <span>Browse deals</span>
+      <a href="{{ url_for('home') }}">Explore latest deals →</a>
+    </div>
+    <div class="dashboard-card">
+      <span>Need help?</span>
+      <a href="{{ url_for('contact') }}">Contact support →</a>
+    </div>
+  </div>
+</section>
+{% endblock %}

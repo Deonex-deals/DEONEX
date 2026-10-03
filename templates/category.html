@@ -1,0 +1,29 @@
+{% extends "base.html" %}
+
+{% block title %}{{ category.name }} Deals | Deonex Deals{% endblock %}
+
+{% block content %}
+<section class="page-banner">
+  <div class="container">
+    <span class="eyebrow">CATEGORY</span>
+    <h1>{{ category.name }} Deals</h1>
+    <p>{{ category.description or 'Curated products and offers for smart shoppers.' }}</p>
+  </div>
+</section>
+
+<section class="container section">
+  <div class="section-heading">
+    <div>
+      <h2>{{ products|length }} offers found</h2>
+    </div>
+  </div>
+
+  <div class="product-grid">
+    {% for product in products %}
+      {% include "_product_card.html" %}
+    {% else %}
+      <p class="empty-message">इस category में अभी कोई product available नहीं है।</p>
+    {% endfor %}
+  </div>
+</section>
+{% endblock %}

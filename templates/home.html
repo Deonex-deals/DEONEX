@@ -1,0 +1,104 @@
+{% extends "base.html" %}
+
+{% block title %}Deonex Deals | Premium Deals{% endblock %}
+
+{% block content %}
+<section class="hero">
+  <div class="container hero-grid">
+    <div class="hero-copy">
+      <span class="eyebrow">CURATED SAVINGS • PREMIUM PICKS</span>
+      <h1>Best deals, picked for your <span>better lifestyle.</span></h1>
+      <p>Electronics, fashion, home essentials और daily-use products पर smart discounts खोजिए — all in one premium destination.</p>
+      <div class="hero-actions">
+        <a class="btn btn-primary" href="#featured-deals">Explore deals</a>
+        <a class="btn btn-secondary" href="{{ url_for('about') }}">How it works</a>
+      </div>
+
+      <div class="hero-stats">
+        <div><strong>Premium</strong><span>Curated offers</span></div>
+        <div><strong>Fresh</strong><span>Updated deals</span></div>
+        <div><strong>Secure</strong><span>Trusted redirects</span></div>
+      </div>
+    </div>
+
+    <div class="hero-card">
+      <div class="floating-badge">UP TO 70% OFF</div>
+      <div class="hero-orb orb-one"></div>
+      <div class="hero-orb orb-two"></div>
+      <div class="deal-preview">
+        <span class="mini-tag">TODAY'S PICK</span>
+        <div class="preview-icon">✦</div>
+        <h3>Discover deals that feel worth it.</h3>
+        <p>Hand-picked products. Clear prices. Quick access.</p>
+        <div class="preview-price">Save more <span>every day</span></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section class="container section">
+  <div class="section-heading">
+    <div>
+      <span class="eyebrow">BROWSE BY INTEREST</span>
+      <h2>Explore categories</h2>
+    </div>
+  </div>
+
+  <div class="category-grid">
+    {% for category in categories %}
+      <a class="category-card" href="{{ url_for('category', slug=category.slug) }}">
+        <span class="category-icon">✦</span>
+        <h3>{{ category.name }}</h3>
+        <p>{{ category.description or 'Top offers curated for you' }}</p>
+        <span class="arrow-link">Explore →</span>
+      </a>
+    {% else %}
+      <p class="empty-message">Categories जल्दी यहाँ दिखाई देंगी।</p>
+    {% endfor %}
+  </div>
+</section>
+
+<section id="featured-deals" class="container section">
+  <div class="section-heading">
+    <div>
+      <span class="eyebrow">EDITOR'S CHOICE</span>
+      <h2>Featured deals</h2>
+    </div>
+    <span class="section-note">Prices and availability may change.</span>
+  </div>
+
+  <div class="product-grid">
+    {% for product in featured_products %}
+      {% include "_product_card.html" %}
+    {% else %}
+      <p class="empty-message">अभी कोई featured product नहीं है। Supabase में demo products add करें।</p>
+    {% endfor %}
+  </div>
+</section>
+
+<section class="container section latest-section">
+  <div class="section-heading">
+    <div>
+      <span class="eyebrow">JUST ADDED</span>
+      <h2>Latest discoveries</h2>
+    </div>
+  </div>
+
+  <div class="product-grid">
+    {% for product in latest_products %}
+      {% include "_product_card.html" %}
+    {% endfor %}
+  </div>
+</section>
+
+<section class="newsletter-section">
+  <div class="container newsletter-content">
+    <div>
+      <span class="eyebrow">SMART SHOPPING STARTS HERE</span>
+      <h2>Never miss a worthwhile deal.</h2>
+      <p>Deonex Deals helps you find products worth checking out, without the clutter.</p>
+    </div>
+    <a class="btn btn-light" href="{{ url_for('register') }}">Create free account</a>
+  </div>
+</section>
+{% endblock %}
