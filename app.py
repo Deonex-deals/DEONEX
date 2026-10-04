@@ -16,10 +16,33 @@ if not app.config["SUPABASE_URL"] or not app.config["SUPABASE_KEY"]:
         "Add them in your .env file or Render environment variables."
     )
 
+if not app.config["SUPABASE_URL"]:
+    raise RuntimeError("SUPABASE_URL is missing.")
+
+if not app.config["SUPABASE_PUBLISHABLE_KEY"]:
+    raise RuntimeError("SUPABASE_PUBLISHABLE_KEY is missing.")
+
 supabase: Client = create_client(
     app.config["SUPABASE_URL"],
-    app.config["SUPABASE_KEY"]
+    app.config["SUPABASE_PUBLISHABLE_KEY"]
 )
+
+supabase_admin = None
+
+if app.config["SUPABASE_SECRET_KEY"]:
+    supabase_admin = create_client(
+        app.config["SUPABASE_URL"],
+        app.config["SUPABASE_SECRET_KEY"]
+    )
+
+print({
+    "supabase_url_present": bool(app.config["SUPABASE_URL"]),
+    "publishable_key_present": bool(app.config["SUPABASE_PUBLISHABLE_KEY"]),
+    "publishable_key_prefix": app.config["SUPABASE_PUBLISHABLE_KEY"][:16],
+    "secret_key_present": bool(app.config["SUPABASE_SECRET_KEY"]),
+    "secret_key_prefix": app.config["SUPABASE_SECRET_KEY"][:10],
+    "admin_client_created": supabase_admin is not None
+})
 
 
 def current_user():
