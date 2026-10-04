@@ -10,17 +10,14 @@ from config import Config
 app = Flask(__name__)
 app.config.from_object(Config)
 
-if not app.config["SUPABASE_URL"] or not app.config["SUPABASE_KEY"]:
-    raise RuntimeError(
-        "SUPABASE_URL and SUPABASE_KEY are required. "
-        "Add them in your .env file or Render environment variables."
-    )
-
 if not app.config["SUPABASE_URL"]:
     raise RuntimeError("SUPABASE_URL is missing.")
 
 if not app.config["SUPABASE_PUBLISHABLE_KEY"]:
-    raise RuntimeError("SUPABASE_PUBLISHABLE_KEY is missing.")
+    raise RuntimeError(
+        "SUPABASE_PUBLISHABLE_KEY is missing. "
+        "Add it in Render Environment Variables."
+    )
 
 supabase: Client = create_client(
     app.config["SUPABASE_URL"],
