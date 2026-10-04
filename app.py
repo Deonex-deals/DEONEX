@@ -203,7 +203,13 @@ def contact():
             return redirect(url_for("contact"))
 
         try:
-            supabase.table("contacts").insert({
+            if supabase_admin is None:
+                raise RuntimeError(
+                    "Admin database client missing. "
+                    "Add SUPABASE_SECRET_KEY in Render Environment."
+                )
+
+            supabase_admin.table("contacts").insert({
                 "name": name,
                 "email": email,
                 "subject": subject,
@@ -211,6 +217,7 @@ def contact():
             }).execute()
 
             flash("आपका संदेश सफलतापूर्वक भेज दिया गया है।", "success")
+
         except Exception as error:
             flash(f"Message save नहीं हो सका: {error}", "danger")
 
@@ -232,7 +239,13 @@ def feedback():
             return redirect(url_for("feedback"))
 
         try:
-            supabase.table("feedback").insert({
+            if supabase_admin is None:
+                raise RuntimeError(
+                    "Admin database client missing. "
+                    "Add SUPABASE_SECRET_KEY in Render Environment."
+                )
+
+            supabase_admin.table("feedback").insert({
                 "name": name,
                 "email": email,
                 "rating": int(rating),
@@ -240,6 +253,7 @@ def feedback():
             }).execute()
 
             flash("Feedback के लिए धन्यवाद।", "success")
+
         except Exception as error:
             flash(f"Feedback save नहीं हो सका: {error}", "danger")
 
