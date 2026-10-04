@@ -1,0 +1,30 @@
+name: Flipkart Product Import
+
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: "15 */3 * * *"
+
+jobs:
+  import-flipkart-products:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install dependencies
+        run: pip install -r requirements.txt
+
+      - name: Import Flipkart products
+        env:
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_SECRET_KEY: ${{ secrets.SUPABASE_SECRET_KEY }}
+          FLIPKART_API_URL: ${{ secrets.FLIPKART_API_URL }}
+          FLIPKART_API_KEY: ${{ secrets.FLIPKART_API_KEY }}
+        run: python -m services.import_flipkart
