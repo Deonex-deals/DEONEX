@@ -3,7 +3,7 @@ name: Cuelinks Product Import
 on:
   workflow_dispatch:
   schedule:
-    - cron: "30 0,12 * * *"
+    - cron: "0 0 * * *"
 
 jobs:
   import-cuelinks-products:
