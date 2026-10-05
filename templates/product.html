@@ -39,7 +39,30 @@
           <span class="save-text">Save {{ product.discount_percent }}%</span>
         {% endif %}
       </div>
+     {% if product.variants and product.variants|length > 0 %}
+  <div class="product-variants">
+    <h3>Available sizes</h3>
 
+    <div class="variant-list">
+      {% for variant in product.variants %}
+        <div class="variant-item">
+          <span>{{ variant.size }}</span>
+          <strong>₹{{ "%.0f"|format(variant.price) }}</strong>
+
+          {% if variant.stock is defined %}
+            <small>
+              {% if variant.stock %}
+                In stock
+              {% else %}
+                Out of stock
+              {% endif %}
+            </small>
+          {% endif %}
+        </div>
+      {% endfor %}
+    </div>
+  </div>
+{% endif %}
       <p class="product-description">{{ product.description or 'A curated deal selected for you.' }}</p>
 
       <a class="btn btn-primary full-width-btn" href="{{ url_for('affiliate_redirect', product_id=product.id) }}" target="_blank" rel="nofollow sponsored noopener">
