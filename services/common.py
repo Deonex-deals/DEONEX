@@ -81,23 +81,24 @@ def save_product(product):
     category_id = get_or_create_category(product["category_name"])
 
     payload = {
-        "category_id": category_id,
-        "title": product["title"],
-        "slug": product["slug"],
-        "description": product.get("description", ""),
-        "image_url": product.get("image_url"),
-        "affiliate_url": product["affiliate_url"],
-        "source_product_url": product.get("source_product_url"),
-        "current_price": product.get("current_price", 0),
-        "original_price": product.get("original_price", 0),
-        "discount_percent": product.get("discount_percent", 0),
-        "rating": product.get("rating", 0),
-        "store_name": product.get("store_name", "Partner Store"),
-        "source": product["source"],
-        "external_id": product["external_id"],
-        "is_active": True,
-        "last_synced_at": datetime.now(timezone.utc).isoformat()
-    }
+    "category_id": category_id,
+    "title": product["title"],
+    "slug": product["slug"],
+    "description": product.get("description", ""),
+    "image_url": product.get("image_url"),
+    "affiliate_url": product["affiliate_url"],
+    "source_product_url": product.get("source_product_url"),
+    "current_price": product.get("current_price", 0),
+    "original_price": product.get("original_price", 0),
+    "discount_percent": product.get("discount_percent", 0),
+    "rating": product.get("rating", 0),
+    "store_name": product.get("store_name", "Partner Store"),
+    "source": product["source"],
+    "external_id": product["external_id"],
+    "is_active": True,
+    "last_synced_at": datetime.now(timezone.utc).isoformat(),
+    "variants": product.get("variants", [])
+}
 
     existing = (
         supabase.table("products")
