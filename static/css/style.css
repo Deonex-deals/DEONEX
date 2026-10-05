@@ -1245,3 +1245,41 @@ img {
     gap: 29px;
   }
 }
+.product-variants {
+  margin: 24px 0;
+  padding: 18px;
+  border: 1px solid #e7e8ef;
+  border-radius: 14px;
+  background: #fafaff;
+}
+
+.product-variants h3 {
+  margin: 0 0 13px;
+  font-size: 15px;
+}
+
+.variant-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.variant-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 9px 12px;
+  border: 1px solid #e1e3ed;
+  border-radius: 9px;
+  background: #ffffff;
+  font-size: 13px;
+}
+
+.variant-item strong {
+  color: #6d4aff;
+}
+
+.variant-item small {
+  color: #1b9b68;
+  font-size: 10px;
+}
