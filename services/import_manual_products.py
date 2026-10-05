@@ -69,7 +69,8 @@ def run_manual_import():
             "rating": safe_float(item.get("rating")),
             "store_name": item.get("store_name", "Partner Store"),
             "category_name": item.get("category_name", "Other"),
-            "is_featured": bool(item.get("is_featured", False))
+            "is_featured": bool(item.get("is_featured", False)),
+            "variants": item.get("variants", [])
         }
 
         try:
