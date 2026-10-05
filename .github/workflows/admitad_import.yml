@@ -3,7 +3,7 @@ name: Admitad Product Import
 on:
   workflow_dispatch:
   schedule:
-    - cron: "45 */12 * * *"
+    - cron: "0 0 * * *"
 
 jobs:
   import-admitad-products:
