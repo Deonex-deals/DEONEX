@@ -1,12 +1,18 @@
-name: Manual Product Import
+name: CSV Product Import to Supabase
 
 on:
   workflow_dispatch:
+  push:
+    paths:
+      - "manual_products.csv"
   schedule:
     - cron: "0 0 * * *"
 
+permissions:
+  contents: read
+
 jobs:
-  import-manual-products:
+  convert-and-import-products:
     runs-on: ubuntu-latest
 
     steps:
@@ -21,7 +27,10 @@ jobs:
       - name: Install dependencies
         run: pip install -r requirements.txt
 
-      - name: Import manual products to Supabase
+      - name: Convert CSV to JSON
+        run: python tools/csv_to_json.py
+
+      - name: Import JSON products to Supabase
         env:
           SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
           SUPABASE_SECRET_KEY: ${{ secrets.SUPABASE_SECRET_KEY }}
