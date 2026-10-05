@@ -16,6 +16,24 @@ def to_float(value, default=0):
 
 
 def to_bool(value):
+    def to_variants(value):
+    value = clean_text(value)
+
+    if not value:
+        return []
+
+    try:
+        variants = json.loads(value)
+
+        if not isinstance(variants, list):
+            raise ValueError("Variants must be a JSON list.")
+
+        return variants
+
+    except json.JSONDecodeError as error:
+        raise ValueError(
+            f"Invalid variants JSON: {value}"
+        ) from error
     return str(value).strip().lower() in (
         "true",
         "yes",
@@ -83,15 +101,17 @@ def convert_csv_to_json():
                 "current_price": to_float(row.get("current_price")),
                 "original_price": to_float(row.get("original_price")),
                 "rating": to_float(row.get("rating")),
-                "store_name": row.get(
-                    "store_name",
-                    "Partner Store"
-                ).strip(),
-                "category_name": row.get(
-                    "category_name",
-                    "Other"
-                ).strip(),
-                "is_featured": to_bool(row.get("is_featured", "false"))
+               "store_name": clean_text(
+                     row.get("store_name")
+               ) or "Partner Store",
+               "category_name": clean_text(
+                    row.get("category_name")
+               ) or "Other",
+              "is_featured": to_bool(
+                      row.get("is_featured")),
+              "variants": to_variants(
+                   row.get("variants")
+)
             }
 
             products.append(product)
