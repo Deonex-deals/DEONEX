@@ -1,0 +1,109 @@
+{% extends "base.html" %}
+
+{% block title %}Privacy Policy | Deonex Deals{% endblock %}
+
+{% block content %}
+<section class="page-banner">
+  <div class="container">
+    <span class="eyebrow">YOUR PRIVACY MATTERS</span>
+    <h1>Privacy Policy</h1>
+    <p>हम आपकी information को कैसे collect और use करते हैं.</p>
+  </div>
+</section>
+
+<section class="container legal-section">
+  <p class="legal-updated">Last updated: 06 October 2026</p>
+
+  <h2>1. About this policy</h2>
+  <p>
+    यह Privacy Policy बताती है कि Deonex Deals website पर information किस प्रकार
+    collect, use, store और protect की जा सकती है।
+  </p>
+
+  <h2>2. Information we collect</h2>
+  <p>
+    जब आप Contact form, Feedback form या account registration use करते हैं, तो
+    हम आपका नाम, email address, subject, message, rating और account-related
+    information collect कर सकते हैं।
+  </p>
+
+  <h2>3. Product browsing data</h2>
+  <p>
+    Product pages देखने, affiliate links पर click करने और website interaction से
+    technical information या click statistics record हो सकते हैं। इसका उपयोग
+    website performance, product popularity और deal experience सुधारने के लिए
+    किया जा सकता है।
+  </p>
+
+  <h2>4. How we use information</h2>
+  <p>
+    हम collected information का उपयोग contact requests का जवाब देने, feedback
+    समझने, account provide करने, website secure रखने, products और services
+    improve करने तथा abuse/spam रोकने के लिए कर सकते हैं।
+  </p>
+
+  <h2>5. Database and service providers</h2>
+  <p>
+    Website data Supabase जैसे infrastructure/service providers के माध्यम से
+    store और process हो सकता है। Website Render जैसे hosting provider पर host हो
+    सकती है। इन providers की अपनी privacy और security policies लागू हो सकती हैं।
+  </p>
+
+  <h2>6. Affiliate and third-party links</h2>
+  <p>
+    Website में partner stores और affiliate networks के links हो सकते हैं। जब
+    आप किसी external link पर जाते हैं, तो third-party website आपकी information
+    अपनी policy के अनुसार collect कर सकती है। External website पर जाने के बाद
+    उसकी privacy policy पढ़ें।
+  </p>
+
+  <h2>7. Cookies and analytics</h2>
+  <p>
+    Website basic functionality, session handling, security और analytics के लिए
+    cookies या similar technologies का उपयोग कर सकती है। Browser settings से
+    cookies control की जा सकती हैं, लेकिन cookies disable करने पर कुछ features
+    सही काम न करें।
+  </p>
+
+  <h2>8. Data security</h2>
+  <p>
+    हम information को unauthorized access, misuse, loss और alteration से बचाने
+    के लिए reasonable technical और organizational safeguards use करने का प्रयास
+    करते हैं। फिर भी internet transmission या online storage को पूरी तरह risk-free
+    guarantee नहीं किया जा सकता।
+  </p>
+
+  <h2>9. Data retention</h2>
+  <p>
+    Contact messages, feedback और account information को business, support,
+    security, legal या operational purpose के लिए आवश्यक अवधि तक रखा जा सकता
+    है। आवश्यकता समाप्त होने पर data delete या anonymize किया जा सकता है।
+  </p>
+
+  <h2>10. Your requests</h2>
+  <p>
+    आप अपने personal data की access, correction, deletion या processing-related
+    request के लिए Contact page से request भेज सकते हैं। Request process करने
+    से पहले identity verification मांगी जा सकती है।
+  </p>
+
+  <h2>11. Children’s privacy</h2>
+  <p>
+    यह website knowingly बच्चों से personal information collect करने के लिए
+    designed नहीं है। यदि किसी guardian को लगे कि किसी बच्चे ने information
+    submit की है, तो वह हमसे Contact page के माध्यम से संपर्क कर सकता है।
+  </p>
+
+  <h2>12. Policy updates</h2>
+  <p>
+    हम इस Privacy Policy को समय-समय पर update कर सकते हैं। Latest version इसी
+    page पर उपलब्ध होगी और updated date ऊपर दिखाई जाएगी।
+  </p>
+
+  <h2>13. Contact and complaints</h2>
+  <p>
+    Privacy-related प्रश्न, correction request या complaint के लिए
+    <a href="{{ url_for('contact') }}">Contact page</a> का उपयोग करें।
+  </p>
+</section>
+{% endblock %}
