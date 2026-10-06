@@ -70,12 +70,18 @@
       </div>
 
       <div>
-        <h4>Quick Links</h4>
-        <a href="{{ url_for('home') }}">Home</a>
-        <a href="{{ url_for('about') }}">About us</a>
-        <a href="{{ url_for('contact') }}">Contact</a>
-        <a href="{{ url_for('feedback') }}">Feedback</a>
-      </div>
+  <h4>Quick Links</h4>
+  <a href="{{ url_for('home') }}">Home</a>
+  <a href="{{ url_for('about') }}">About us</a>
+  <a href="{{ url_for('contact') }}">Contact</a>
+  <a href="{{ url_for('feedback') }}">Feedback</a>
+</div>
+
+<div>
+  <h4>Legal</h4>
+  <a href="{{ url_for('terms') }}">Terms & Conditions</a>
+  <a href="{{ url_for('privacy_policy') }}">Privacy Policy</a>
+</div>
 
       <div>
         <h4>Categories</h4>
@@ -85,10 +91,13 @@
       </div>
 
       <div>
-        <h4>Disclosure</h4>
-        <p>कुछ links affiliate links हो सकते हैं। आपके लिए कोई extra cost नहीं होती, लेकिन Deonex Deals को commission मिल सकता है.</p>
-      </div>
-    </div>
+  <h4>Disclosure</h4>
+  <p>
+    कुछ product links affiliate links हो सकते हैं। Qualifying purchase पर
+    Deonex Deals को commission मिल सकता है। इससे आपके लिए extra cost नहीं होती।
+  </p>
+  <a href="{{ url_for('privacy_policy') }}">Read Privacy Policy →</a>
+</div>
 
     <div class="container footer-bottom">
       <span>© 2026 Deonex Deals. All rights reserved.</span>
