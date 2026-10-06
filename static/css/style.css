@@ -1325,3 +1325,37 @@ img {
     font-size: 13px;
   }
 }
+.legal-owner-card {
+  margin: 24px 0 35px;
+  padding: 22px;
+  border: 1px solid var(--line);
+  border-left: 4px solid var(--purple);
+  border-radius: 16px;
+  background: #ffffff;
+  box-shadow: 0 8px 22px rgba(27, 26, 58, 0.05);
+}
+
+.legal-owner-card h2 {
+  margin-top: 0;
+  font-size: 21px;
+}
+
+.legal-owner-card p {
+  margin: 8px 0;
+}
+
+.contact-info-card {
+  margin-bottom: 24px;
+  padding: 20px;
+  border-radius: 14px;
+  background: #f0edff;
+}
+
+.contact-info-card h3 {
+  margin-top: 0;
+}
+
+.contact-info-card a {
+  color: var(--purple);
+  font-weight: 800;
+}
