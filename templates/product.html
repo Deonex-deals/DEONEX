@@ -47,7 +47,7 @@
       {% for variant in product.variants %}
         <div class="variant-item">
           <span>{{ variant.size }}</span>
-          <strong>₹{{ "%.0f"|format(variant.price) }}</strong>
+          <strong>₹{{ variant.price | to_price }}</strong>
 
           {% if variant.stock is defined %}
             <small>
