@@ -148,6 +148,20 @@ def convert_csv_to_json():
         "products_converted": len(products)
     })
 
+def to_number(value, default=0):
+    if value is None or value == "":
+        return default
+
+    try:
+        return float(str(value).replace(",", "").replace("₹", "").strip())
+    except (TypeError, ValueError):
+        return default
+        variant_price = to_number(variant.get("price"), 0)
+
+variants.append({
+    "size": str(variant.get("size", "")).strip(),
+    "price": int(variant_price) if variant_price.is_integer() else variant_price
+})
 
 if __name__ == "__main__":
     convert_csv_to_json()
