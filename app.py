@@ -391,7 +391,14 @@ def affiliate_redirect(product_id):
 @app.errorhandler(404)
 def page_not_found(error):
     return render_template("404.html"), 404
-
+    
+@app.template_filter("to_price")
+def to_price(value):
+    try:
+        number = float(str(value).replace(",", "").replace("₹", "").strip())
+        return f"{number:,.0f}"
+    except (TypeError, ValueError):
+        return value
 
 if __name__ == "__main__":
     app.run(debug=True)
