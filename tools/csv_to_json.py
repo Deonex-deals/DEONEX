@@ -21,8 +21,8 @@ except ImportError:
 
 
 BASE_DIR = Path(__file__).resolve().parents[1]
-CSV_PATH = BASE_DIR / "data" / "products.csv"
-JSON_PATH = BASE_DIR / "data" / "products.json"
+CSV_PATH = BASE_DIR / "products.csv"
+JSON_PATH = BASE_DIR / "manual_products.json"
 
 load_dotenv(BASE_DIR / ".env")
 
