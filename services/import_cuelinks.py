@@ -61,7 +61,7 @@ def run_cuelinks_import():
             ),
             "rating": safe_float(item.get("rating")),
             "store_name": item.get("store_name", "Cuelinks Partner"),
-            "category_name": item.get("category", "Other")
+            "category": item.get("category", "Other")
         }
 
         result = save_product(product)
