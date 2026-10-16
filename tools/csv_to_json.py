@@ -1,52 +1,99 @@
+"""
+Convert products CSV to products JSON and optionally upsert to Supabase.
+
+Expected CSV columns:
+external_id,title,slug,description,image_url,affiliate_url,
+source_product_url,current_price,original_price,discount_percent,
+rating,store_name,is_active,is_featured,category,variants
+"""
+
 import csv
 import json
+import os
 from pathlib import Path
 
-PROJECT_ROOT = Path(__file__).resolve().parent.parent
+from dotenv import load_dotenv
 
-INPUT_FILE = PROJECT_ROOT / "manual_products.csv"
-OUTPUT_FILE = PROJECT_ROOT / "manual_products.json"
-
-
-def clean_text(value):
-    return str(value or "").strip()
+try:
+    from supabase import create_client
+except ImportError:
+    create_client = None
 
 
-def to_float(value, default=0):
-    value = clean_text(value).replace("₹", "").replace(",", "")
+BASE_DIR = Path(__file__).resolve().parents[1]
+CSV_PATH = BASE_DIR / "data" / "products.csv"
+JSON_PATH = BASE_DIR / "data" / "products.json"
+
+load_dotenv(BASE_DIR / ".env")
+
+SUPABASE_URL = (
+    os.getenv("SUPABASE_URL")
+    or os.getenv("NEXT_PUBLIC_SUPABASE_URL")
+    or ""
+).strip()
+
+SUPABASE_SECRET_KEY = (
+    os.getenv("SUPABASE_SECRET_KEY")
+    or os.getenv("SUPABASE_SERVICE_ROLE_KEY")
+    or ""
+).strip()
+
+supabase = None
+
+if SUPABASE_URL and SUPABASE_SECRET_KEY and create_client:
+    try:
+        supabase = create_client(SUPABASE_URL, SUPABASE_SECRET_KEY)
+    except Exception as error:
+        print(f"Warning: Could not create Supabase client: {error}")
+
+
+def to_number(value, default=0):
+    """Convert CSV values such as '1,311', '₹368' or 368 into a number."""
+    if value is None or value == "":
+        return default
 
     try:
-        return float(value)
-    except (ValueError, TypeError):
+        number = float(
+            str(value)
+            .replace(",", "")
+            .replace("₹", "")
+            .replace("Rs.", "")
+            .replace("Rs", "")
+            .strip()
+        )
+        return int(number) if number.is_integer() else number
+    except (TypeError, ValueError):
         return default
 
 
-def to_bool(value):
-    return clean_text(value).lower() in {
-        "true",
-        "yes",
-        "1",
-        "y"
-    }
+def to_boolean(value, default=False):
+    """Convert TRUE/FALSE/true/false/1/0 into a Python boolean."""
+    if value is None or value == "":
+        return default
+
+    return str(value).strip().lower() in ("true", "1", "yes", "y")
 
 
-def to_variants(value):
-    value = (value or "").strip()
+def normalize_variant(variant):
+    """
+    Accept old and new variant formats.
 
-    if not value:
-        return []
+    Old:
+    {"color":"Black","size":"S","price":368}
 
-    try:
-        parsed = json.loads(value)
-    except json.JSONDecodeError as exc:
-        raise ValueError(f"Invalid variants JSON: {value}") from exc
+    New:
+    {"attributes":{"Color":"Black","Size":"S"},"price":368,"stock":10}
+    """
+    if not isinstance(variant, dict):
+        return {
+            "attributes": {},
+            "price": 0,
+            "stock": 0,
+        }
 
-    if not isinstance(parsed, list):
-        raise ValueError(f"Variants must be a JSON array: {value}")
+    attributes = variant.get("attributes")
 
-    variants = []
-
-    for variant in parsed:
+    if not isinstance(attributes, dict):
         attributes = {}
 
         if variant.get("color"):
@@ -55,171 +102,271 @@ def to_variants(value):
         if variant.get("size"):
             attributes["Size"] = str(variant["size"]).strip()
 
-        variants.append({
-            "attributes": attributes,
-            "price": to_number(variant.get("price"), 0),
-            "stock": to_number(variant.get("stock"), 0)
-        })
+        if variant.get("storage"):
+            attributes["Storage"] = str(variant["storage"]).strip()
 
-    return variants
+        if variant.get("material"):
+            attributes["Material"] = str(variant["material"]).strip()
 
+        if variant.get("capacity"):
+            attributes["Capacity"] = str(variant["capacity"]).strip()
+
+    clean_attributes = {}
+
+    for attribute_name, attribute_value in attributes.items():
+        if attribute_value is None or str(attribute_value).strip() == "":
+            continue
+
+        clean_attributes[str(attribute_name).strip()] = (
+            str(attribute_value).strip()
+        )
+
+    return {
+        "attributes": clean_attributes,
+        "price": to_number(variant.get("price"), 0),
+        "stock": to_number(variant.get("stock"), 0),
+    }
+
+
+def to_variants(value):
+    """Parse and normalize the variants JSON string from CSV."""
+    value = (value or "").strip()
+
+    if not value:
+        return []
+
+    try:
+        parsed = json.loads(value)
     except json.JSONDecodeError as error:
         raise ValueError(
-            f"Invalid variants JSON: {value}"
+            f"Invalid variants JSON: {value}. "
+            'Use numeric prices, for example {"price":1311}, '
+            'not {"price":1,311}.'
         ) from error
 
+    if not isinstance(parsed, list):
+        raise ValueError(f"Variants must be a JSON array: {value}")
 
-def convert_csv_to_json():
-    if not INPUT_FILE.exists():
-        raise FileNotFoundError(
-            f"CSV file not found: {INPUT_FILE.name}"
+    return [normalize_variant(variant) for variant in parsed]
+
+
+def get_category_id(category_name):
+    """
+    Convert a category name such as Kitchen into its category_id.
+
+    If Supabase is unavailable, returns None. In that case the JSON file
+    can still be generated, but database upsert is skipped.
+    """
+    category_name = (category_name or "Other").strip()
+
+    if not supabase:
+        return None
+
+    response = (
+        supabase
+        .table("categories")
+        .select("id,name")
+        .ilike("name", category_name)
+        .limit(1)
+        .execute()
+    )
+
+    if response.data:
+        return response.data[0]["id"]
+
+    fallback = (
+        supabase
+        .table("categories")
+        .select("id")
+        .ilike("name", "Other")
+        .limit(1)
+        .execute()
+    )
+
+    if not fallback.data:
+        raise ValueError(
+            f"Category '{category_name}' was not found and no 'Other' "
+            "category exists in the categories table."
         )
+
+    return fallback.data[0]["id"]
+
+
+def build_product(row, row_number):
+    """Convert one CSV row into a clean product dictionary."""
+    external_id = (row.get("external_id") or "").strip()
+    title = (row.get("title") or "").strip()
+
+    if not external_id:
+        raise ValueError(f"Row {row_number}: external_id is required")
+
+    if not title:
+        raise ValueError(f"Row {row_number}: title is required")
+
+    slug = (row.get("slug") or "").strip()
+
+    if not slug:
+        slug = title.lower().replace(" ", "-")
+
+    category_name = (row.get("category") or "").strip() or "Other"
+
+    current_price = to_number(row.get("current_price"), 0)
+    original_price = to_number(row.get("original_price"), 0)
+
+    discount_percent = to_number(row.get("discount_percent"), 0)
+
+    if discount_percent == 0 and original_price > current_price > 0:
+        discount_percent = round(
+            ((original_price - current_price) / original_price) * 100
+        )
+
+    return {
+        "external_id": external_id,
+        "title": title,
+        "slug": slug,
+        "description": (row.get("description") or "").strip(),
+        "image_url": (row.get("image_url") or "").strip(),
+        "affiliate_url": (row.get("affiliate_url") or "").strip(),
+        "source_product_url": (row.get("source_product_url") or "").strip(),
+        "current_price": current_price,
+        "original_price": original_price,
+        "discount_percent": discount_percent,
+        "rating": to_number(row.get("rating"), 0),
+        "store_name": (row.get("store_name") or "").strip(),
+        "is_active": to_boolean(row.get("is_active"), True),
+        "is_featured": to_boolean(row.get("is_featured"), False),
+        "category": category_name,
+        "category_id": get_category_id(category_name),
+        "variants": to_variants(row.get("variants", "")),
+    }
+
+
+def read_products_from_csv():
+    """Read and validate all product rows from the CSV file."""
+    if not CSV_PATH.exists():
+        raise FileNotFoundError(f"CSV file not found: {CSV_PATH}")
 
     products = []
 
-    with open(
-        INPUT_FILE,
-        "r",
-        encoding="utf-8-sig",
-        newline=""
-    ) as file:
-        reader = csv.DictReader(file)
-
-        required_columns = [
-            "external_id",
-            "title",
-            "affiliate_url"
-        ]
+    with CSV_PATH.open("r", encoding="utf-8-sig", newline="") as csv_file:
+        reader = csv.DictReader(csv_file)
 
         if not reader.fieldnames:
-            raise ValueError("CSV headers are missing.")
+            raise ValueError("CSV file has no header row")
 
-        missing_columns = [
-            column
-            for column in required_columns
-            if column not in reader.fieldnames
-        ]
+        required_columns = {
+            "external_id",
+            "title",
+            "slug",
+            "image_url",
+            "affiliate_url",
+            "current_price",
+            "original_price",
+            "discount_percent",
+            "rating",
+            "store_name",
+            "is_active",
+            "is_featured",
+            "category",
+            "variants",
+        }
+
+        missing_columns = required_columns - set(reader.fieldnames)
 
         if missing_columns:
             raise ValueError(
                 "Missing required CSV columns: "
-                + ", ".join(missing_columns)
+                + ", ".join(sorted(missing_columns))
             )
 
         for row_number, row in enumerate(reader, start=2):
-            external_id = clean_text(row.get("external_id"))
-            title = clean_text(row.get("title"))
-            affiliate_url = clean_text(row.get("affiliate_url"))
+            try:
+                product = build_product(row, row_number)
+            except Exception as error:
+                raise ValueError(f"Row {row_number}: {error}") from error
 
-            if not external_id or not title or not affiliate_url:
-                print(
-                    f"Skipped row {row_number}: "
-                    "external_id, title or affiliate_url missing."
-                )
-                continue
+            products.append(product)
 
-            products.append({
-                "external_id": external_id,
-                "title": title,
-                "description": clean_text(row.get("description")),
-                "image_url": clean_text(row.get("image_url")),
-                "affiliate_url": affiliate_url,
-                "source_product_url": clean_text(
-                    row.get("source_product_url")
-                ),
-                "current_price": to_float(
-                    row.get("current_price")
-                ),
-                "original_price": to_float(
-                    row.get("original_price")
-                ),
-                "rating": to_float(row.get("rating")),
-                "store_name": clean_text(
-                    row.get("store_name")
-                ) or "Partner Store",
-                "category_name": clean_text(
-                    row.get("category_name")
-                ) or "Other",
-                "is_featured": to_bool(
-                    row.get("is_featured")
-                ),
-                "variants": to_variants(
-                    row.get("variants")
-                )
-            })
+    return products
 
-    with open(
-        OUTPUT_FILE,
-        "w",
-        encoding="utf-8"
-    ) as file:
+
+def write_products_json(products):
+    """Write clean product data to data/products.json."""
+    JSON_PATH.parent.mkdir(parents=True, exist_ok=True)
+
+    with JSON_PATH.open("w", encoding="utf-8") as json_file:
         json.dump(
             products,
-            file,
+            json_file,
+            indent=2,
             ensure_ascii=False,
-            indent=2
         )
 
-    print({
-        "status": "success",
-        "csv_file": INPUT_FILE.name,
-        "json_file": OUTPUT_FILE.name,
-        "products_converted": len(products)
-    })
+    print(f"Created JSON file: {JSON_PATH}")
+    print(f"Total products written: {len(products)}")
 
-def to_number(value, default=0):
-    if value is None or value == "":
-        return default
+
+def upsert_products_to_supabase(products):
+    """Upsert products into Supabase if credentials are configured."""
+    if not supabase:
+        print("Supabase is not configured. Skipping database upsert.")
+        return
+
+    database_products = []
+
+    for product in products:
+        database_products.append(
+            {
+                "external_id": product["external_id"],
+                "title": product["title"],
+                "slug": product["slug"],
+                "description": product["description"],
+                "image_url": product["image_url"],
+                "affiliate_url": product["affiliate_url"],
+                "source_product_url": product["source_product_url"],
+                "current_price": product["current_price"],
+                "original_price": product["original_price"],
+                "discount_percent": product["discount_percent"],
+                "rating": product["rating"],
+                "store_name": product["store_name"],
+                "is_active": product["is_active"],
+                "is_featured": product["is_featured"],
+                "category_id": product["category_id"],
+                "variants": product["variants"],
+            }
+        )
 
     try:
-        return float(str(value).replace(",", "").replace("₹", "").strip())
-    except (TypeError, ValueError):
-        return default
-        variant_price = to_number(variant.get("price"), 0)
+        (
+            supabase
+            .table("products")
+            .upsert(
+                database_products,
+                on_conflict="external_id",
+            )
+            .execute()
+        )
 
-raw_variants = to_variants(row.get("variants", ""))
+        print(f"Upserted {len(database_products)} products to Supabase.")
+    except Exception as error:
+        print(f"Warning: Supabase upsert failed: {error}")
+        raise
 
-variants = []
 
-for variant in raw_variants:
-    attributes = {}
+def convert_csv_to_json():
+    print(f"Reading CSV file: {CSV_PATH}")
 
-    if variant.get("color"):
-        attributes["Color"] = str(variant["color"]).strip()
+    products = read_products_from_csv()
 
-    if variant.get("size"):
-        attributes["Size"] = str(variant["size"]).strip()
+    if not products:
+        print("Warning: No products found in CSV file.")
+        return
 
-    if variant.get("storage"):
-        attributes["Storage"] = str(variant["storage"]).strip()
+    write_products_json(products)
+    upsert_products_to_supabase(products)
 
-    if variant.get("material"):
-        attributes["Material"] = str(variant["material"]).strip()
+    print("CSV to JSON conversion completed successfully.")
 
-    variants.append({
-        "attributes": attributes,
-        "price": to_number(variant.get("price"), 0),
-        "stock": to_number(variant.get("stock"), 0)
-    })
-
-product = {
-    "external_id": row["external_id"].strip(),
-    "title": row["title"].strip(),
-    "slug": row["slug"].strip(),
-    "description": row.get("description", "").strip(),
-    "image_url": row.get("image_url", "").strip(),
-    "affiliate_url": row.get("affiliate_url", "").strip(),
-    "source_product_url": row.get("source_product_url", "").strip(),
-    "current_price": to_number(row.get("current_price"), 0),
-    "original_price": to_number(row.get("original_price"), 0),
-    "discount_percent": to_number(row.get("discount_percent"), 0),
-    "rating": to_number(row.get("rating"), 0),
-    "store_name": row.get("store_name", "").strip(),
-    "is_active": row.get("is_active", "").strip().upper() == "TRUE",
-    "is_featured": row.get("is_featured", "").strip().upper() == "TRUE",
-    "category_id": get_category_id(row.get("category", "")),
-    "variants": variants
-}
 
 if __name__ == "__main__":
     convert_csv_to_json()
