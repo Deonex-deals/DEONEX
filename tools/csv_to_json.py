@@ -31,18 +31,37 @@ def to_bool(value):
 
 
 def to_variants(value):
-    value = clean_text(value)
+    value = (value or "").strip()
 
     if not value:
         return []
 
     try:
-        variants = json.loads(value)
+        parsed = json.loads(value)
+    except json.JSONDecodeError as exc:
+        raise ValueError(f"Invalid variants JSON: {value}") from exc
 
-        if not isinstance(variants, list):
-            raise ValueError("Variants must be a JSON list.")
+    if not isinstance(parsed, list):
+        raise ValueError(f"Variants must be a JSON array: {value}")
 
-        return variants
+    variants = []
+
+    for variant in parsed:
+        attributes = {}
+
+        if variant.get("color"):
+            attributes["Color"] = str(variant["color"]).strip()
+
+        if variant.get("size"):
+            attributes["Size"] = str(variant["size"]).strip()
+
+        variants.append({
+            "attributes": attributes,
+            "price": to_number(variant.get("price"), 0),
+            "stock": to_number(variant.get("stock"), 0)
+        })
+
+    return variants
 
     except json.JSONDecodeError as error:
         raise ValueError(
@@ -158,10 +177,49 @@ def to_number(value, default=0):
         return default
         variant_price = to_number(variant.get("price"), 0)
 
-variants.append({
-    "size": str(variant.get("size", "")).strip(),
-    "price": int(variant_price) if variant_price.is_integer() else variant_price
-})
+raw_variants = to_variants(row.get("variants", ""))
+
+variants = []
+
+for variant in raw_variants:
+    attributes = {}
+
+    if variant.get("color"):
+        attributes["Color"] = str(variant["color"]).strip()
+
+    if variant.get("size"):
+        attributes["Size"] = str(variant["size"]).strip()
+
+    if variant.get("storage"):
+        attributes["Storage"] = str(variant["storage"]).strip()
+
+    if variant.get("material"):
+        attributes["Material"] = str(variant["material"]).strip()
+
+    variants.append({
+        "attributes": attributes,
+        "price": to_number(variant.get("price"), 0),
+        "stock": to_number(variant.get("stock"), 0)
+    })
+
+product = {
+    "external_id": row["external_id"].strip(),
+    "title": row["title"].strip(),
+    "slug": row["slug"].strip(),
+    "description": row.get("description", "").strip(),
+    "image_url": row.get("image_url", "").strip(),
+    "affiliate_url": row.get("affiliate_url", "").strip(),
+    "source_product_url": row.get("source_product_url", "").strip(),
+    "current_price": to_number(row.get("current_price"), 0),
+    "original_price": to_number(row.get("original_price"), 0),
+    "discount_percent": to_number(row.get("discount_percent"), 0),
+    "rating": to_number(row.get("rating"), 0),
+    "store_name": row.get("store_name", "").strip(),
+    "is_active": row.get("is_active", "").strip().upper() == "TRUE",
+    "is_featured": row.get("is_featured", "").strip().upper() == "TRUE",
+    "category_id": get_category_id(row.get("category", "")),
+    "variants": variants
+}
 
 if __name__ == "__main__":
     convert_csv_to_json()
