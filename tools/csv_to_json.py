@@ -13,7 +13,7 @@ import os
 from pathlib import Path
 
 from dotenv import load_dotenv
-
+ 
 try:
     from supabase import create_client
 except ImportError:
