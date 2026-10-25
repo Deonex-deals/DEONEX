@@ -288,5 +288,59 @@
         "stock": 0
       }
     ]
+  },
+  {
+    "external_id": "PR007",
+    "title": "toysfbffn",
+    "slug": "toyssfbffn",
+    "description": "bkbkbblkb",
+    "image_url": "https://m.media-amazon.com/images/I/A1UOWSuvw0L._SX679_.jpg",
+    "affiliate_url": "https://link.amazon/B03qxTG96",
+    "source_product_url": "https://link.amazon/B03qxTG96",
+    "current_price": 459,
+    "original_price": 1299,
+    "discount_percent": 79,
+    "rating": 3.7,
+    "store_name": "amazon",
+    "is_active": true,
+    "is_featured": false,
+    "category_id": "02b9eb05-7406-475f-99ca-40df5497ff93",
+    "variants": [
+      {
+        "attributes": {
+          "Size": "S"
+        },
+        "price": 459,
+        "stock": 0
+      },
+      {
+        "attributes": {
+          "Size": "M"
+        },
+        "price": 459,
+        "stock": 0
+      },
+      {
+        "attributes": {
+          "Size": "L"
+        },
+        "price": 459,
+        "stock": 0
+      },
+      {
+        "attributes": {
+          "Size": "XL"
+        },
+        "price": 459,
+        "stock": 0
+      },
+      {
+        "attributes": {
+          "Size": "XXL"
+        },
+        "price": 459,
+        "stock": 0
+      }
+    ]
   }
 ]
