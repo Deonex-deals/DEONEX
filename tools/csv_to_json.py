@@ -1,5 +1,8 @@
 """
-Convert products CSV to products JSON and optionally upsert to Supabase.
+Convert products.csv to products.json and upsert products to Supabase.
+
+Expected CSV location:
+products.csv  (repository root)
 
 Expected CSV columns:
 external_id,title,slug,description,image_url,affiliate_url,
@@ -22,10 +25,7 @@ except ImportError:
 
 BASE_DIR = Path(__file__).resolve().parents[1]
 
-# CSV repository root me hai.
 CSV_PATH = BASE_DIR / "products.csv"
-
-# Generated JSON bhi repository root me banega.
 JSON_PATH = BASE_DIR / "products.json"
 
 load_dotenv(BASE_DIR / ".env")
@@ -42,6 +42,12 @@ SUPABASE_SECRET_KEY = (
     or ""
 ).strip()
 
+SUPABASE_ANON_KEY = (
+    os.getenv("SUPABASE_ANON_KEY")
+    or os.getenv("SUPABASE_PUBLISHABLE_KEY")
+    or ""
+).strip()
+
 supabase = None
 
 if SUPABASE_URL and SUPABASE_SECRET_KEY and create_client:
@@ -52,10 +58,14 @@ if SUPABASE_URL and SUPABASE_SECRET_KEY and create_client:
         print(f"Warning: Could not create Supabase client: {error}")
 else:
     print("Supabase credentials not found. Database upsert will be skipped.")
+    print(
+        "Required environment variables: "
+        "SUPABASE_URL and SUPABASE_SECRET_KEY"
+    )
 
 
 def to_number(value, default=0):
-    """Convert values like '1,311', '₹368' or 368 into a number."""
+    """Convert '1,311', '₹368' or 368 into a number."""
     if value is None or value == "":
         return default
 
@@ -75,7 +85,7 @@ def to_number(value, default=0):
 
 
 def to_boolean(value, default=False):
-    """Convert TRUE/FALSE/true/false/1/0 into a Python boolean."""
+    """Convert TRUE/FALSE/true/false/1/0 into a boolean."""
     if value is None or value == "":
         return default
 
@@ -83,7 +93,7 @@ def to_boolean(value, default=False):
 
 
 def make_slug(value):
-    """Create a simple URL-friendly slug from a category name."""
+    """Create a simple URL-friendly slug."""
     value = (value or "").strip().lower()
 
     replacements = {
@@ -107,10 +117,10 @@ def normalize_variant(variant):
     """
     Normalize old and new variant formats.
 
-    Old format:
+    Old:
     {"color":"Black","size":"S","price":368}
 
-    New format:
+    New:
     {"attributes":{"Color":"Black","Size":"S"},"price":368,"stock":10}
     """
     if not isinstance(variant, dict):
@@ -170,7 +180,7 @@ def to_variants(value):
     except json.JSONDecodeError as error:
         raise ValueError(
             f"Invalid variants JSON: {value}. "
-            'Use numeric prices, for example {"price":1311}, '
+            'Use numeric price, for example {"price":1311}, '
             'not {"price":1,311}.'
         ) from error
 
@@ -182,8 +192,8 @@ def to_variants(value):
 
 def get_or_create_category(category_name):
     """
-    Find a category by name.
-    If it does not exist, create it automatically and return its ID.
+    Find category by name.
+    If missing, create it automatically and return category_id.
     """
     category_name = (category_name or "Other").strip()
 
@@ -248,7 +258,10 @@ def get_or_create_category(category_name):
 
     if retry_response.data:
         category_id = retry_response.data[0]["id"]
-        print(f"Category found after retry: {category_name} (ID: {category_id})")
+        print(
+            f"Category found after retry: {category_name} "
+            f"(ID: {category_id})"
+        )
         return category_id
 
     raise ValueError(f"Could not create or find category: {category_name}")
