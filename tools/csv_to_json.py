@@ -151,12 +151,6 @@ def to_variants(value):
 
 
 def get_category_id(category_name):
-    """
-    Convert a category name such as Kitchen into its category_id.
-
-    If Supabase is unavailable, returns None. In that case the JSON file
-    can still be generated, but database upsert is skipped.
-    """
     category_name = (category_name or "Other").strip()
 
     if not supabase:
@@ -193,7 +187,6 @@ def get_category_id(category_name):
 
 
 def build_product(row, row_number):
-    """Convert one CSV row into a clean product dictionary."""
     external_id = (row.get("external_id") or "").strip()
     title = (row.get("title") or "").strip()
 
@@ -338,13 +331,10 @@ def upsert_products_to_supabase(products):
 
     try:
         (
-            supabase
-            .table("products")
-            .upsert(
-                database_products,
-                on_conflict="external_id",
-            )
-            .execute()
+           supabase.table("products").upsert(
+              products,
+              on_conflict="external_id"
+           ).execute()
         )
 
         print(f"Upserted {len(database_products)} products to Supabase.")
