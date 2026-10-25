@@ -409,50 +409,60 @@ def write_products_json(products):
 
 
 def upsert_products_to_supabase(products):
-    """Upsert products into Supabase if credentials are configured."""
     if not supabase:
         print("Supabase is not configured. Skipping database upsert.")
         return
 
-    database_products = []
-
     for product in products:
-        database_products.append(
-            {
-                "external_id": product["external_id"],
-                "title": product["title"],
-                "slug": product["slug"],
-                "description": product["description"],
-                "image_url": product["image_url"],
-                "affiliate_url": product["affiliate_url"],
-                "source_product_url": product["source_product_url"],
-                "current_price": product["current_price"],
-                "original_price": product["original_price"],
-                "discount_percent": product["discount_percent"],
-                "rating": product["rating"],
-                "store_name": product["store_name"],
-                "is_active": product["is_active"],
-                "is_featured": product["is_featured"],
-                "category_id": product["category_id"],
-                "variants": product["variants"],
-            }
-        )
+        database_product = {
+            "external_id": product["external_id"],
+            "title": product["title"],
+            "slug": product["slug"],
+            "description": product["description"],
+            "image_url": product["image_url"],
+            "affiliate_url": product["affiliate_url"],
+            "source_product_url": product["source_product_url"],
+            "current_price": product["current_price"],
+            "original_price": product["original_price"],
+            "discount_percent": product["discount_percent"],
+            "rating": product["rating"],
+            "store_name": product["store_name"],
+            "is_active": product["is_active"],
+            "is_featured": product["is_featured"],
+            "category_id": product["category_id"],
+            "variants": product["variants"],
+        }
 
-    try:
-        (
+        existing = (
             supabase
             .table("products")
-            .upsert(
-                database_products,
-                on_conflict="external_id",
-            )
+            .select("id")
+            .eq("external_id", product["external_id"])
+            .limit(1)
             .execute()
         )
 
-        print(f"Upserted {len(database_products)} products to Supabase.")
-    except Exception as error:
-        print(f"Warning: Supabase product upsert failed: {error}")
-        raise
+        if existing.data:
+            product_id = existing.data[0]["id"]
+
+            (
+                supabase
+                .table("products")
+                .update(database_product)
+                .eq("id", product_id)
+                .execute()
+            )
+
+            print(f"Updated product: {product['external_id']}")
+        else:
+            (
+                supabase
+                .table("products")
+                .insert(database_product)
+                .execute()
+            )
+
+            print(f"Inserted product: {product['external_id']}")
 
 
 def convert_csv_to_json():
