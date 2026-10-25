@@ -13,7 +13,7 @@ import os
 from pathlib import Path
 
 from dotenv import load_dotenv
- 
+
 try:
     from supabase import create_client
 except ImportError:
@@ -21,8 +21,12 @@ except ImportError:
 
 
 BASE_DIR = Path(__file__).resolve().parents[1]
+
+# CSV repository root me hai.
 CSV_PATH = BASE_DIR / "products.csv"
-JSON_PATH = BASE_DIR / "manual_products.json"
+
+# Generated JSON bhi repository root me banega.
+JSON_PATH = BASE_DIR / "products.json"
 
 load_dotenv(BASE_DIR / ".env")
 
@@ -43,12 +47,15 @@ supabase = None
 if SUPABASE_URL and SUPABASE_SECRET_KEY and create_client:
     try:
         supabase = create_client(SUPABASE_URL, SUPABASE_SECRET_KEY)
+        print("Supabase client connected successfully.")
     except Exception as error:
         print(f"Warning: Could not create Supabase client: {error}")
+else:
+    print("Supabase credentials not found. Database upsert will be skipped.")
 
 
 def to_number(value, default=0):
-    """Convert CSV values such as '1,311', '₹368' or 368 into a number."""
+    """Convert values like '1,311', '₹368' or 368 into a number."""
     if value is None or value == "":
         return default
 
@@ -61,6 +68,7 @@ def to_number(value, default=0):
             .replace("Rs", "")
             .strip()
         )
+
         return int(number) if number.is_integer() else number
     except (TypeError, ValueError):
         return default
@@ -74,14 +82,35 @@ def to_boolean(value, default=False):
     return str(value).strip().lower() in ("true", "1", "yes", "y")
 
 
+def make_slug(value):
+    """Create a simple URL-friendly slug from a category name."""
+    value = (value or "").strip().lower()
+
+    replacements = {
+        "&": "and",
+        "/": "-",
+        ",": "-",
+        ".": "-",
+        "(": "",
+        ")": "",
+    }
+
+    for old, new in replacements.items():
+        value = value.replace(old, new)
+
+    value = "-".join(value.split())
+
+    return value or "other"
+
+
 def normalize_variant(variant):
     """
-    Accept old and new variant formats.
+    Normalize old and new variant formats.
 
-    Old:
+    Old format:
     {"color":"Black","size":"S","price":368}
 
-    New:
+    New format:
     {"attributes":{"Color":"Black","Size":"S"},"price":368,"stock":10}
     """
     if not isinstance(variant, dict):
@@ -114,12 +143,13 @@ def normalize_variant(variant):
     clean_attributes = {}
 
     for attribute_name, attribute_value in attributes.items():
-        if attribute_value is None or str(attribute_value).strip() == "":
+        if attribute_value is None:
             continue
 
-        clean_attributes[str(attribute_name).strip()] = (
-            str(attribute_value).strip()
-        )
+        attribute_value = str(attribute_value).strip()
+
+        if attribute_value:
+            clean_attributes[str(attribute_name).strip()] = attribute_value
 
     return {
         "attributes": clean_attributes,
@@ -129,7 +159,7 @@ def normalize_variant(variant):
 
 
 def to_variants(value):
-    """Parse and normalize the variants JSON string from CSV."""
+    """Parse and normalize variants JSON from CSV."""
     value = (value or "").strip()
 
     if not value:
@@ -150,11 +180,20 @@ def to_variants(value):
     return [normalize_variant(variant) for variant in parsed]
 
 
-def get_category_id(category_name):
+def get_or_create_category(category_name):
+    """
+    Find a category by name.
+    If it does not exist, create it automatically and return its ID.
+    """
     category_name = (category_name or "Other").strip()
 
+    if not category_name:
+        category_name = "Other"
+
     if not supabase:
-        return None
+        raise ValueError(
+            "Supabase client is not configured, so category cannot be created."
+        )
 
     response = (
         supabase
@@ -166,52 +205,83 @@ def get_category_id(category_name):
     )
 
     if response.data:
-        return response.data[0]["id"]
+        category_id = response.data[0]["id"]
+        print(f"Category found: {category_name} (ID: {category_id})")
+        return category_id
 
-    fallback = (
+    print(f"Category not found. Creating category: {category_name}")
+
+    slug = make_slug(category_name)
+
+    try:
+        insert_response = (
+            supabase
+            .table("categories")
+            .insert(
+                {
+                    "name": category_name,
+                    "slug": slug,
+                }
+            )
+            .execute()
+        )
+
+        if insert_response.data:
+            category_id = insert_response.data[0]["id"]
+            print(f"Category created: {category_name} (ID: {category_id})")
+            return category_id
+
+    except Exception as error:
+        print(
+            f"Warning: Could not insert category '{category_name}': {error}. "
+            "Trying to find it again."
+        )
+
+    retry_response = (
         supabase
         .table("categories")
-        .select("id")
-        .ilike("name", "Other")
+        .select("id,name")
+        .ilike("name", category_name)
         .limit(1)
         .execute()
     )
 
-    if not fallback.data:
-        raise ValueError(
-            f"Category '{category_name}' was not found and no 'Other' "
-            "category exists in the categories table."
-        )
+    if retry_response.data:
+        category_id = retry_response.data[0]["id"]
+        print(f"Category found after retry: {category_name} (ID: {category_id})")
+        return category_id
 
-    return fallback.data[0]["id"]
+    raise ValueError(f"Could not create or find category: {category_name}")
 
 
 def build_product(row, row_number):
+    """Convert one CSV row into a clean product dictionary."""
     external_id = (row.get("external_id") or "").strip()
     title = (row.get("title") or "").strip()
 
     if not external_id:
-        raise ValueError(f"Row {row_number}: external_id is required")
+        raise ValueError("external_id is required")
 
     if not title:
-        raise ValueError(f"Row {row_number}: title is required")
+        raise ValueError("title is required")
 
     slug = (row.get("slug") or "").strip()
 
     if not slug:
-        slug = title.lower().replace(" ", "-")
+        slug = make_slug(title)
 
     category_name = (row.get("category") or "").strip() or "Other"
 
     current_price = to_number(row.get("current_price"), 0)
     original_price = to_number(row.get("original_price"), 0)
-
     discount_percent = to_number(row.get("discount_percent"), 0)
 
     if discount_percent == 0 and original_price > current_price > 0:
         discount_percent = round(
             ((original_price - current_price) / original_price) * 100
         )
+
+    category_id = get_or_create_category(category_name)
 
     return {
         "external_id": external_id,
@@ -228,14 +298,13 @@ def build_product(row, row_number):
         "store_name": (row.get("store_name") or "").strip(),
         "is_active": to_boolean(row.get("is_active"), True),
         "is_featured": to_boolean(row.get("is_featured"), False),
-        "category": category_name,
-        "category_id": get_category_id(category_name),
+        "category_id": category_id,
         "variants": to_variants(row.get("variants", "")),
     }
 
 
 def read_products_from_csv():
-    """Read and validate all product rows from the CSV file."""
+    """Read and validate all product rows from CSV."""
     if not CSV_PATH.exists():
         raise FileNotFoundError(f"CSV file not found: {CSV_PATH}")
 
@@ -284,7 +353,7 @@ def read_products_from_csv():
 
 
 def write_products_json(products):
-    """Write clean product data to data/products.json."""
+    """Write clean product data to products.json."""
     JSON_PATH.parent.mkdir(parents=True, exist_ok=True)
 
     with JSON_PATH.open("w", encoding="utf-8") as json_file:
@@ -331,15 +400,18 @@ def upsert_products_to_supabase(products):
 
     try:
         (
-           supabase.table("products").upsert(
-              products,
-              on_conflict="external_id"
-           ).execute()
+            supabase
+            .table("products")
+            .upsert(
+                database_products,
+                on_conflict="external_id",
+            )
+            .execute()
         )
 
         print(f"Upserted {len(database_products)} products to Supabase.")
     except Exception as error:
-        print(f"Warning: Supabase upsert failed: {error}")
+        print(f"Warning: Supabase product upsert failed: {error}")
         raise
 
 
