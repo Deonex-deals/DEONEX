@@ -192,8 +192,8 @@ def to_variants(value):
 
 def get_or_create_category(category_name):
     """
-    Find category by name.
-    If missing, create it automatically and return category_id.
+    Find a category by name or slug.
+    If it does not exist, create it automatically and return its ID.
     """
     category_name = (category_name or "Other").strip()
 
@@ -205,23 +205,46 @@ def get_or_create_category(category_name):
             "Supabase client is not configured, so category cannot be created."
         )
 
+    slug = make_slug(category_name)
+
+    # 1. Search by exact/case-insensitive name
     response = (
         supabase
         .table("categories")
-        .select("id,name")
+        .select("id,name,slug")
         .ilike("name", category_name)
         .limit(1)
         .execute()
     )
 
     if response.data:
-        category_id = response.data[0]["id"]
-        print(f"Category found: {category_name} (ID: {category_id})")
-        return category_id
+        category = response.data[0]
+        print(
+            f"Category found by name: {category['name']} "
+            f"(ID: {category['id']})"
+        )
+        return category["id"]
 
+    # 2. Search by slug
+    response = (
+        supabase
+        .table("categories")
+        .select("id,name,slug")
+        .eq("slug", slug)
+        .limit(1)
+        .execute()
+    )
+
+    if response.data:
+        category = response.data[0]
+        print(
+            f"Category found by slug: {category['name']} "
+            f"(ID: {category['id']})"
+        )
+        return category["id"]
+
+    # 3. Try to create the missing category
     print(f"Category not found. Creating category: {category_name}")
-
-    slug = make_slug(category_name)
 
     try:
         insert_response = (
@@ -237,9 +260,12 @@ def get_or_create_category(category_name):
         )
 
         if insert_response.data:
-            category_id = insert_response.data[0]["id"]
-            print(f"Category created: {category_name} (ID: {category_id})")
-            return category_id
+            category = insert_response.data[0]
+            print(
+                f"Category created: {category['name']} "
+                f"(ID: {category['id']})"
+            )
+            return category["id"]
 
     except Exception as error:
         print(
@@ -247,22 +273,23 @@ def get_or_create_category(category_name):
             "Trying to find it again."
         )
 
-    retry_response = (
+    # 4. Final retry by name or slug
+    response = (
         supabase
         .table("categories")
-        .select("id,name")
-        .ilike("name", category_name)
+        .select("id,name,slug")
+        .or_(f"name.ilike.{category_name},slug.eq.{slug}")
         .limit(1)
         .execute()
     )
 
-    if retry_response.data:
-        category_id = retry_response.data[0]["id"]
+    if response.data:
+        category = response.data[0]
         print(
-            f"Category found after retry: {category_name} "
-            f"(ID: {category_id})"
+            f"Category found after retry: {category['name']} "
+            f"(ID: {category['id']})"
         )
-        return category_id
+        return category["id"]
 
     raise ValueError(f"Could not create or find category: {category_name}")
 
