@@ -1,18 +1,18 @@
-name: CSV Product Import to Supabase
+name: Generate product JSON
 
 on:
-  workflow_dispatch:
   push:
     paths:
-      - "manual_products.csv"
-  schedule:
-    - cron: "0 0 * * *"
+      - "products.csv"
+      - "tools/csv_to_json.py"
+      - ".github/workflows/generate-products.yml"
+  workflow_dispatch:
 
 permissions:
-  contents: read
+  contents: write
 
 jobs:
-  convert-and-import-products:
+  generate:
     runs-on: ubuntu-latest
 
     steps:
@@ -25,13 +25,48 @@ jobs:
           python-version: "3.12"
 
       - name: Install dependencies
-        run: pip install -r requirements.txt
+        run: |
+          python -m pip install --upgrade pip
+          pip install python-dotenv supabase
 
-      - name: Convert CSV to JSON
-        run: python tools/csv_to_json.py
-
-      - name: Import JSON products to Supabase
+      - name: Check Supabase secrets
         env:
           SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
           SUPABASE_SECRET_KEY: ${{ secrets.SUPABASE_SECRET_KEY }}
-        run: python -m services.import_manual_products
+        run: |
+          if [ -z "$SUPABASE_URL" ]; then
+            echo "SUPABASE_URL is MISSING"
+          else
+            echo "SUPABASE_URL is present"
+          fi
+
+          if [ -z "$SUPABASE_SECRET_KEY" ]; then
+            echo "SUPABASE_SECRET_KEY is MISSING"
+          else
+            echo "SUPABASE_SECRET_KEY is present"
+          fi
+
+      - name: Generate product JSON
+        env:
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_SECRET_KEY: ${{ secrets.SUPABASE_SECRET_KEY }}
+        run: python tools/csv_to_json.py
+
+      - name: Show generated JSON
+        run: |
+          ls -la products.json
+          head -n 30 products.json
+
+      - name: Commit generated JSON
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+
+          git add products.json
+
+          if git diff --cached --quiet; then
+            echo "No JSON changes to commit"
+          else
+            git commit -m "Update generated product JSON"
+            git push
+          fi
